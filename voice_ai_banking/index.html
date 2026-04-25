@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kentiq AI — Dubai Bank Voice Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #C9A84C; --gold-light: #E8C97A; --gold-dim: rgba(201,168,76,0.13);
+  --navy: #0B1628; --navy-mid: #112040; --navy-light: #1A3058;
+  --surface: #0F1E36; --surface-raised: #172846;
+  --border: rgba(201,168,76,0.18);
+  --text-primary: #F0EDE6; --text-secondary: #8FA3BC; --text-muted: #4A6080;
+  --green: #3DDC97; --red: #FF6B6B; --blue: #4DA8FF;
+  --radius: 16px; --radius-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-gold: 0 0 30px rgba(201,168,76,0.15);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy); color: var(--text-primary);
+  min-height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 0%, rgba(201,168,76,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 100%, rgba(77,168,255,0.05) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(201,168,76,0.03) 39px, rgba(201,168,76,0.03) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(201,168,76,0.03) 39px, rgba(201,168,76,0.03) 40px);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── Layout */
+.app { display: flex; height: 100vh; position: relative; z-index: 1; overflow: hidden; }
+
+/* ── SIDEBAR */
+.sidebar {
+  width: 270px; min-width: 270px;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-header { padding: 24px 20px 18px; border-bottom: 1px solid var(--border); }
+.logo { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.logo-icon {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 17px; box-shadow: 0 4px 12px rgba(201,168,76,0.3);
+}
+.logo-text { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: var(--gold-light); }
+.logo-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; padding-left: 50px; }
+
+.status-bar {
+  display: flex; align-items: center; gap: 8px; margin-top: 14px;
+  padding: 8px 12px; background: var(--navy-mid); border-radius: var(--radius-sm); border: 1px solid var(--border);
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #FFA726; box-shadow: 0 0 8px #FFA726; animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-text { font-size: 11px; color: var(--text-secondary); font-family: 'DM Mono', monospace; }
+
+.sidebar-nav { padding: 16px; flex: 1; overflow-y: auto; }
+.nav-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); padding: 0 8px; margin: 14px 0 6px; }
+.nav-label:first-child { margin-top: 0; }
+.nav-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px;
+  border-radius: var(--radius-sm); border: none; background: transparent;
+  color: var(--text-secondary); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: left;
+}
+.nav-btn:hover { background: var(--gold-dim); color: var(--text-primary); }
+.nav-btn.active { background: linear-gradient(90deg, var(--gold-dim), transparent); color: var(--gold-light); border-left: 2px solid var(--gold); padding-left: 10px; }
+.nav-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--navy-light); font-size: 14px; flex-shrink: 0; }
+.nav-btn.active .nav-icon { background: var(--gold-dim); }
+
+.sidebar-account {
+  margin: 0 14px 18px; padding: 16px;
+  background: linear-gradient(135deg, var(--navy-mid), var(--navy-light));
+  border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-gold);
+}
+.account-holder { font-family: 'Playfair Display', serif; font-size: 14px; color: var(--gold-light); }
+.account-number { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 2px; }
+.account-balance-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 12px; }
+.account-balance-amount { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold); margin-top: 2px; }
+.account-type-badge {
+  display: inline-block; margin-top: 8px; padding: 3px 10px;
+  background: var(--gold-dim); border: 1px solid var(--border); border-radius: 20px;
+  font-size: 10px; color: var(--gold-light); letter-spacing: 1px; text-transform: uppercase;
+}
+
+/* ── MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar {
+  padding: 14px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(15,30,54,0.8); backdrop-filter: blur(8px);
+}
+.topbar-title { font-family: 'Playfair Display', serif; font-size: 17px; }
+.topbar-subtitle { font-size: 11px; color: var(--text-muted); }
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--surface-raised); color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 15px; transition: all 0.2s;
+}
+.btn-icon:hover { border-color: var(--gold); color: var(--gold); }
+
+.tabs-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 20px; }
+.tab {
+  padding: 13px 18px; font-size: 12px; font-weight: 500; color: var(--text-muted);
+  cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
+  display: flex; align-items: center; gap: 7px;
+}
+.tab:hover { color: var(--text-secondary); }
+.tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+
+.panels { flex: 1; overflow: hidden; display: flex; }
+.panel { display: none; flex: 1; overflow-y: auto; padding: 24px; animation: fadeIn 0.3s ease; }
+.panel.active { display: flex; flex-direction: column; gap: 18px; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+/* ── CHAT PANEL */
+#panel-chat { padding: 0; flex-direction: column; }
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 20px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.msg { display: flex; gap: 10px; max-width: 82%; animation: msgIn 0.3s ease; }
+@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.msg.bot { align-self: flex-start; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+}
+.msg.bot .msg-avatar { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
+.msg.user .msg-avatar { background: var(--navy-light); border: 1px solid var(--border); }
+.msg-content { display: flex; flex-direction: column; }
+.msg-bubble {
+  padding: 11px 15px; border-radius: 15px; font-size: 14px; line-height: 1.6;
+}
+.msg.bot .msg-bubble {
+  background: var(--surface-raised); border: 1px solid var(--border);
+  border-top-left-radius: 4px; color: var(--text-primary);
+}
+.msg.user .msg-bubble {
+  background: linear-gradient(135deg, var(--gold-dim), rgba(201,168,76,0.08));
+  border: 1px solid var(--border); border-top-right-radius: 4px; color: var(--text-primary);
+}
+.msg-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.msg-time { font-size: 10px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+.play-audio-btn {
+  background: var(--gold-dim); border: 1px solid var(--border); border-radius: 20px;
+  color: var(--gold-light); font-size: 10px; padding: 2px 9px; cursor: pointer; transition: all 0.2s;
+  font-family: 'DM Mono', monospace;
+}
+.play-audio-btn:hover { background: var(--gold); color: var(--navy); }
+.msg-data-card {
+  margin-top: 8px; padding: 11px 14px; background: var(--navy-mid); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px; font-family: 'DM Mono', monospace;
+  color: var(--gold-light); line-height: 1.8; white-space: pre-wrap;
+}
+.typing-indicator { display: none; align-self: flex-start; align-items: center; gap: 10px; padding: 4px 0; }
+.typing-indicator.visible { display: flex; }
+.typing-dots { display: flex; gap: 4px; padding: 11px 15px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 15px; border-top-left-radius: 4px; }
+.typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: bounce 1.4s infinite; }
+.typing-dots span:nth-child(2){animation-delay:.2s} .typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.4} 40%{transform:scale(1);opacity:1} }
+
+/* Chat input */
+.chat-input-area {
+  padding: 14px 24px; border-top: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.chat-quick-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.quick-btn {
+  padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--navy-mid); color: var(--text-secondary); font-size: 12px;
+  cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+}
+.quick-btn:hover { border-color: var(--gold); color: var(--gold-light); background: var(--gold-dim); }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.chat-input {
+  flex: 1; background: var(--navy-mid); border: 1px solid var(--border); border-radius: 11px;
+  color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  padding: 11px 15px; resize: none; min-height: 44px; max-height: 110px;
+  outline: none; transition: border-color 0.2s;
+}
+.chat-input:focus { border-color: var(--gold); }
+.chat-input::placeholder { color: var(--text-muted); }
+.send-btn {
+  width: 44px; height: 44px; border-radius: 11px; border: none;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--navy);
+  font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(201,168,76,0.4); }
+.mic-btn {
+  width: 44px; height: 44px; border-radius: 11px; border: 1px solid var(--border);
+  background: var(--surface-raised); color: var(--text-secondary); font-size: 17px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.mic-btn:hover { border-color: var(--gold); color: var(--gold); }
+.mic-btn.recording { background: rgba(255,107,107,0.15); border-color: var(--red); color: var(--red); animation: mic-pulse 1s infinite; }
+@keyframes mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,107,0.4)} 50%{box-shadow:0 0 0 8px rgba(255,107,107,0)} }
+.voice-status {
+  font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace;
+  text-align: center; min-height: 16px;
+}
+
+/* ── BALANCE PANEL */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 14px; }
+.balance-card {
+  background: linear-gradient(135deg, var(--surface-raised), var(--navy-light));
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
+  position: relative; overflow: hidden; transition: transform 0.2s;
+}
+.balance-card:hover { transform: translateY(-2px); }
+.balance-card::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 90px; height: 90px; border-radius: 50%; opacity: 0.15;
+}
+.balance-card.primary::before { background: var(--gold); }
+.balance-card.savings::before { background: var(--green); }
+.card-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
+.card-holder { font-family: 'Playfair Display', serif; font-size: 15px; margin-top: 6px; }
+.card-masked { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); margin-top: 3px; letter-spacing: 2px; }
+.card-balance-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 14px; }
+.card-balance { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--gold); margin-top: 2px; }
+.card-status { display: inline-block; margin-top: 8px; padding: 3px 10px; background: rgba(61,220,151,0.1); border: 1px solid rgba(61,220,151,0.2); border-radius: 20px; font-size: 10px; color: var(--green); }
+
+.section-title {
+  font-family: 'Playfair Display', serif; font-size: 16px; color: var(--gold-light);
+  display: flex; align-items: center; gap: 10px; margin-bottom: 2px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.txn-table { width: 100%; border-collapse: collapse; }
+.txn-row {
+  display: grid; grid-template-columns: 100px 1fr 80px 110px;
+  padding: 12px 16px; border-bottom: 1px solid rgba(201,168,76,0.08);
+  align-items: center; gap: 12px; transition: background 0.15s;
+  font-size: 13px;
+}
+.txn-row:hover { background: var(--navy-mid); }
+.txn-row.txn-header { color: var(--text-muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; background: var(--navy-mid); cursor: default; font-weight: 600; }
+.txn-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); }
+.txn-amount.credit { color: var(--green); font-family: 'DM Mono', monospace; }
+.txn-amount.debit { color: var(--red); font-family: 'DM Mono', monospace; }
+.txn-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; letter-spacing: 1px; }
+.txn-badge.credit { background: rgba(61,220,151,0.1); color: var(--green); border: 1px solid rgba(61,220,151,0.2); }
+.txn-badge.debit { background: rgba(255,107,107,0.1); color: var(--red); border: 1px solid rgba(255,107,107,0.2); }
+
+/* ── CHEQUE PANEL */
+.cheque-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px 28px;
+  text-align: center; cursor: pointer; transition: all 0.3s; background: var(--surface-raised);
+  position: relative; overflow: hidden;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--gold); background: var(--gold-dim); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload-icon { font-size: 44px; margin-bottom: 14px; }
+.upload-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--gold-light); }
+.upload-sub { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.6; }
+.upload-constraints { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.constraint-tag { padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+.cheque-preview { margin-top: 14px; display: none; }
+.cheque-preview img { width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); max-height: 200px; object-fit: contain; background: var(--navy-mid); }
+.validation-result { display: none; flex-direction: column; gap: 14px; }
+.validation-result.visible { display: flex; }
+.validation-header { padding: 18px; border-radius: var(--radius); display: flex; align-items: center; gap: 14px; }
+.validation-header.success { background: rgba(61,220,151,0.1); border: 1px solid rgba(61,220,151,0.3); }
+.validation-header.error { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); }
+.validation-icon { font-size: 30px; }
+.validation-title { font-family: 'Playfair Display', serif; font-size: 17px; }
+.validation-msg { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.checks-list { display: flex; flex-direction: column; gap: 7px; }
+.check-item { display: flex; align-items: center; gap: 10px; padding: 9px 13px; background: var(--surface-raised); border-radius: var(--radius-sm); font-size: 13px; }
+.check-item.passed { border-left: 3px solid var(--green); }
+.check-item.failed { border-left: 3px solid var(--red); }
+
+/* ── KYC PANEL */
+.kyc-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.kyc-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.kyc-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--gold-dim); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 32px; }
+.kyc-title { font-family: 'Playfair Display', serif; font-size: 17px; color: var(--gold-light); }
+.kyc-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; text-align: center; }
+.camera-preview {
+  width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--navy); overflow: hidden; display: none; position: relative;
+  aspect-ratio: 16/9;
+}
+.camera-preview video { width: 100%; height: 100%; object-fit: cover; }
+.camera-preview.active { display: block; }
+.cam-timer {
+  position: absolute; top: 10px; right: 12px; background: rgba(255,107,107,0.85);
+  color: white; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+}
+.cam-rec-indicator {
+  position: absolute; top: 10px; left: 12px; display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 20px; font-size: 11px; color: white;
+}
+.rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: pulse-dot 1s infinite; }
+.kyc-status-list { width: 100%; display: flex; flex-direction: column; gap: 7px; }
+.kyc-status-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 13px; background: var(--navy-mid); border-radius: var(--radius-sm); font-size: 13px; }
+.kyc-status-badge { font-size: 10px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.kyc-status-badge.verified { background: rgba(61,220,151,0.1); color: var(--green); border: 1px solid rgba(61,220,151,0.2); }
+.kyc-status-badge.pending { background: rgba(255,167,38,0.1); color: #FFA726; border: 1px solid rgba(255,167,38,0.2); }
+.kyc-status-badge.record { background: rgba(77,168,255,0.1); color: var(--blue); border: 1px solid rgba(77,168,255,0.2); }
+.kyc-status-badge.done { background: rgba(61,220,151,0.1); color: var(--green); border: 1px solid rgba(61,220,151,0.2); }
+.record-btn {
+  padding: 12px 24px; border-radius: var(--radius-sm); border: none;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--navy);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+}
+.record-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.3); }
+.record-btn.recording { background: linear-gradient(135deg, var(--red), #FF9999); }
+.record-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.kyc-result { display: none; background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.kyc-result.visible { display: block; }
+.kyc-ref { font-family: 'DM Mono', monospace; font-size: 20px; color: var(--gold); }
+.kyc-ts { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.voice-progress-bar { width: 100%; background: var(--navy-mid); border-radius: 10px; overflow: hidden; height: 4px; display: none; }
+.voice-progress-bar.active { display: block; }
+.voice-progress-fill { height: 100%; background: var(--gold); width: 0%; transition: width 0.1s linear; }
+.audio-player {
+  display: none; align-items: center; gap: 10px; padding: 10px 16px;
+  background: var(--navy-mid); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.audio-player.active { display: flex; }
+.audio-player audio { flex: 1; height: 32px; }
+.audio-dl { background: var(--gold-dim); border: 1px solid var(--border); border-radius: 8px; color: var(--gold-light); padding: 5px 12px; cursor: pointer; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.audio-label { font-size: 11px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+/* ── MODALS */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+}
+.modal-overlay.visible { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 440px; max-width: 92vw; box-shadow: var(--shadow); }
+.modal h2 { font-family: 'Playfair Display', serif; color: var(--gold-light); margin-bottom: 20px; font-size: 20px; }
+.field-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; display: block; }
+.field-input { width: 100%; padding: 10px 13px; background: var(--navy-mid); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+.field-input:focus { border-color: var(--gold); }
+.field-group { margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.action-btn { width: 100%; padding: 12px; border-radius: var(--radius-sm); border: none; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.action-btn.primary { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--navy); }
+.action-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(201,168,76,0.3); }
+.action-btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+.action-btn.secondary:hover { border-color: var(--gold); color: var(--gold-light); }
+
+/* Backend offline banner */
+.offline-banner {
+  display: none; padding: 10px 20px; background: rgba(255,107,107,0.1);
+  border-bottom: 1px solid rgba(255,107,107,0.3);
+  font-size: 12px; color: var(--red); text-align: center; gap: 10px;
+  align-items: center; justify-content: center;
+}
+.offline-banner.visible { display: flex; }
+.offline-banner button { background: transparent; border: 1px solid var(--red); color: var(--red); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 11px; }
+.offline-banner button:hover { background: rgba(255,107,107,0.15); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+  background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; box-shadow: var(--shadow); transform: translateY(80px);
+  opacity: 0; transition: all 0.3s; z-index: 200;
+}
+.toast.show { transform: none; opacity: 1; }
+.toast.success { border-color: rgba(61,220,151,0.4); }
+.toast.error { border-color: rgba(255,107,107,0.4); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🏦</div>
+        <div class="logo-text">Kentiq AI</div>
+      </div>
+      <div class="logo-sub">Dubai Bank Voice Assistant</div>
+      <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">Connecting…</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <button class="nav-btn active" onclick="switchTab('chat')" id="nav-chat">
+        <div class="nav-icon">💬</div> Voice Chat
+      </button>
+      <button class="nav-btn" onclick="switchTab('balance')" id="nav-balance">
+        <div class="nav-icon">💰</div> Balance
+      </button>
+      <button class="nav-btn" onclick="switchTab('cheque')" id="nav-cheque">
+        <div class="nav-icon">🧾</div> Cheque Verify
+      </button>
+      <button class="nav-btn" onclick="switchTab('kyc')" id="nav-kyc">
+        <div class="nav-icon">🪪</div> KYC
+      </button>
+
+      <div class="nav-label" style="margin-top:18px">System</div>
+      <button class="nav-btn" onclick="checkHealth()">
+        <div class="nav-icon">🔌</div> Check Connection
+      </button>
+      <button class="nav-btn" onclick="showApiSettings()">
+        <div class="nav-icon">⚙️</div> Settings
+      </button>
+    </nav>
+
+    <div class="sidebar-account">
+      <div class="account-holder" id="sidebarHolder">—</div>
+      <div class="account-number" id="sidebarMasked">••••  ••••  ••••</div>
+      <div class="account-balance-label">Available Balance</div>
+      <div class="account-balance-amount" id="sidebarBalance">—</div>
+      <div class="account-type-badge" id="sidebarType">Loading…</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- Offline warning banner -->
+    <div class="offline-banner" id="offlineBanner">
+      ⚠️ Backend offline — please start your FastAPI server at <strong id="offlineUrl"></strong>
+      <button onclick="checkHealth()">Retry</button>
+    </div>
+
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Voice Banking Assistant</div>
+        <div class="topbar-subtitle" id="topbarSub">Initializing…</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="btn-icon" onclick="checkHealth()" title="Connection Status">🔌</div>
+        <div class="btn-icon" onclick="showApiSettings()" title="Settings">⚙️</div>
+      </div>
+    </div>
+
+    <div class="tabs-bar">
+      <div class="tab active" onclick="switchTab('chat')" id="tab-chat">💬 Voice Chat</div>
+      <div class="tab" onclick="switchTab('balance')" id="tab-balance">💰 Balance</div>
+      <div class="tab" onclick="switchTab('cheque')" id="tab-cheque">🧾 Cheque</div>
+      <div class="tab" onclick="switchTab('kyc')" id="tab-kyc">🪪 KYC</div>
+    </div>
+
+    <div class="panels">
+
+      <!-- ── CHAT PANEL -->
+      <div class="panel active" id="panel-chat">
+        <div class="chat-messages" id="chatMessages">
+          <div class="typing-indicator" id="typingIndicator">
+            <div class="msg-avatar" style="background:linear-gradient(135deg,var(--gold),var(--gold-light))">🏦</div>
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Current audio player -->
+        <div class="audio-player" id="currentAudioPlayer">
+          <span class="audio-label">🔊 Bot Voice</span>
+          <audio id="currentAudio" controls></audio>
+          <a id="currentAudioDl" class="audio-dl" download="response.mp3">⬇ Save</a>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="chat-quick-actions">
+            <button class="quick-btn" onclick="sendQuick('Check my balance')">💰 Balance</button>
+            <button class="quick-btn" onclick="sendQuick('Transfer money')">↗ Transfer</button>
+            <button class="quick-btn" onclick="sendQuick('Verify cheque')">🧾 Cheque</button>
+            <button class="quick-btn" onclick="sendQuick('Start KYC')">🪪 KYC</button>
+            <button class="quick-btn" onclick="sendQuick('Help')">❓ Help</button>
+          </div>
+          <div class="voice-progress-bar" id="voiceProgressBar">
+            <div class="voice-progress-fill" id="voiceProgressFill"></div>
+          </div>
+          <div class="input-row">
+            <textarea class="chat-input" id="chatInput" placeholder="Type a message or press 🎤 to speak…" rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+              oninput="autoResize(this)"></textarea>
+            <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Click to record voice">🎤</button>
+            <button class="send-btn" onclick="sendMessage()" title="Send">➤</button>
+          </div>
+          <div class="voice-status" id="voiceStatus"></div>
+        </div>
+      </div>
+
+      <!-- ── BALANCE PANEL -->
+      <div class="panel" id="panel-balance">
+        <div class="section-title">Account Overview</div>
+        <div class="cards-grid">
+          <div class="balance-card primary">
+            <div class="card-label">Primary Account</div>
+            <div class="card-holder" id="balHolder">—</div>
+            <div class="card-masked" id="balMasked">—</div>
+            <div class="card-balance-label">Available Balance</div>
+            <div class="card-balance" id="balAmount">—</div>
+            <div class="card-status">Active</div>
+          </div>
+          <div class="balance-card savings">
+            <div class="card-label">Savings Account</div>
+            <div class="card-holder" id="savHolder">—</div>
+            <div class="card-masked">••••  7890</div>
+            <div class="card-balance-label">Available Balance</div>
+            <div class="card-balance" id="savAmount">—</div>
+            <div class="card-status">Active</div>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:4px">Recent Transactions</div>
+        <div style="background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+          <div class="txn-row txn-header">
+            <span>Date</span><span>Description</span><span>Type</span><span style="text-align:right">Amount</span>
+          </div>
+          <div id="txnList"><div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">Loading transactions…</div></div>
+        </div>
+      </div>
+
+      <!-- ── CHEQUE PANEL -->
+      <div class="panel" id="panel-cheque">
+        <div class="section-title">Cheque Verification</div>
+        <div class="cheque-layout">
+          <div>
+            <div id="uploadZone" class="upload-zone"
+              ondragover="event.preventDefault();this.classList.add('dragover')"
+              ondragleave="this.classList.remove('dragover')"
+              ondrop="handleDrop(event)">
+              <input type="file" id="chequeFileInput" accept=".jpg,.jpeg,.png,.webp" onchange="handleFileSelect(event)">
+              <div class="upload-icon">🧾</div>
+              <div class="upload-title">Drop Cheque Image Here</div>
+              <div class="upload-sub">or click to browse<br>JPG, PNG, WEBP · Max 5 MB · Min 800×400 px</div>
+              <div class="upload-constraints">
+                <span class="constraint-tag">JPG / PNG</span>
+                <span class="constraint-tag">MAX 5 MB</span>
+                <span class="constraint-tag">MIN 800×400</span>
+              </div>
+            </div>
+            <div class="cheque-preview" id="chequePreview">
+              <img id="chequePreviewImg" src="" alt="Cheque preview">
+            </div>
+          </div>
+
+          <div>
+            <div class="validation-result" id="validationResult">
+              <div class="validation-header" id="validationHeader">
+                <div class="validation-icon" id="validationIcon">✅</div>
+                <div>
+                  <div class="validation-title" id="validationTitle"></div>
+                  <div class="validation-msg" id="validationMsg"></div>
+                </div>
+              </div>
+              <div class="section-title" style="font-size:13px">Checks</div>
+              <div class="checks-list" id="checksList"></div>
+              <button class="action-btn secondary" onclick="resetUpload()" style="margin-top:8px">↩ Upload Another</button>
+            </div>
+            <div id="chequePlaceholder" style="display:flex;flex-direction:column;gap:14px;height:100%;justify-content:center;align-items:center;color:var(--text-muted);font-size:13px;text-align:center;padding:40px 20px">
+              <div style="font-size:48px">📋</div>
+              <div>Upload a cheque image on the left to begin verification</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── KYC PANEL -->
+      <div class="panel" id="panel-kyc">
+        <div class="section-title">Identity Verification (KYC)</div>
+        <div class="kyc-layout">
+          <!-- Voice KYC -->
+          <div class="kyc-card">
+            <div class="kyc-icon">🎤</div>
+            <div class="kyc-title">Voice Sample</div>
+            <div class="kyc-desc">Record a 5-second voice sample for identity verification. Speak clearly into your microphone.</div>
+            <div class="voice-progress-bar" id="voiceKycBar" style="width:100%">
+              <div class="voice-progress-fill" id="voiceKycFill"></div>
+            </div>
+            <button class="record-btn" id="voiceRecordBtn" onclick="startVoiceKYC()">🎤 Record Voice</button>
+            <div class="voice-status" id="voiceKycStatus"></div>
+          </div>
+
+          <!-- Video KYC -->
+          <div class="kyc-card">
+            <div class="kyc-icon">📹</div>
+            <div class="kyc-title">Video Sample</div>
+            <div class="kyc-desc">Record a 10-second video sample facing the camera. Ensure good lighting.</div>
+            <div class="camera-preview" id="cameraPreview">
+              <video id="kycVideo" autoplay muted playsinline></video>
+              <div class="cam-rec-indicator" id="camRecIndicator" style="display:none">
+                <div class="rec-dot"></div> REC
+              </div>
+              <div class="cam-timer" id="camTimer" style="display:none">10s</div>
+            </div>
+            <button class="record-btn" id="videoRecordBtn" onclick="startVideoKYC()">📹 Record Video</button>
+            <div class="voice-status" id="videoKycStatus"></div>
+          </div>
+        </div>
+
+        <!-- KYC Status -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div style="background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+            <div class="section-title" style="font-size:13px;margin-bottom:12px">Document Status</div>
+            <div class="kyc-status-list" id="kycStatusList"></div>
+          </div>
+          <div class="kyc-result" id="kycResult">
+            <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">KYC Reference ID</div>
+            <div class="kyc-ref" id="kycRefId">—</div>
+            <div class="kyc-ts" id="kycTimestamp"></div>
+            <div style="margin-top:14px;font-size:13px;color:var(--text-secondary);line-height:1.6" id="kycSpeech"></div>
+          </div>
+          <div id="kycResultPlaceholder" style="background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;text-align:center">
+            Complete recording to see KYC result
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panels -->
+  </main>
+</div><!-- /app -->
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>⚙️ API Settings</h2>
+    <div class="field-group">
+      <label class="field-label">Backend URL</label>
+      <input class="field-input" id="apiBaseUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:-8px;margin-bottom:4px">
+      Make sure your FastAPI server is running:<br>
+      <code style="font-family:'DM Mono',monospace;color:var(--gold-light)">uvicorn main:app --reload --host 0.0.0.0 --port 8000</code>
+    </p>
+    <div class="modal-actions">
+      <button class="action-btn secondary" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="action-btn primary" onclick="saveSettings()">Save & Reconnect</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────
+let API_BASE = localStorage.getItem('apiBase') || 'http://localhost:8000';
+let SESSION_ID = 'sess_' + Math.random().toString(36).substr(2, 10);
+let backendOnline = false;
+
+// Audio store: msgId → audioUrl
+const audioStore = {};
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('apiBaseUrl').value = API_BASE;
+  renderKYCStatus();
+  await checkHealth();
+  if (backendOnline) {
+    await loadBalanceData();
+    await loadTransactions();
+    await sendWelcome();
+  }
+});
+
+// ─────────────────────────────────────────────
+// API HELPERS
+// ─────────────────────────────────────────────
+async function apiGet(path) {
+  const r = await fetch(API_BASE + path);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function apiPost(path, body) {
+  const r = await fetch(API_BASE + path, { method: 'POST', body });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+// ─────────────────────────────────────────────
+// HEALTH CHECK
+// ─────────────────────────────────────────────
+async function checkHealth() {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  const sub  = document.getElementById('topbarSub');
+  const banner = document.getElementById('offlineBanner');
+
+  dot.style.background = '#FFA726';
+  dot.style.boxShadow  = '0 0 8px #FFA726';
+  text.textContent = 'Checking…';
+
+  try {
+    const data = await apiGet('/api/health');
+    backendOnline = true;
+
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow  = '0 0 8px var(--green)';
+    text.textContent = `v${data.version} · ${data.tts_engine.toUpperCase()}`;
+    sub.textContent  = `Connected · PDF:${data.pdf_loaded ? 'Loaded' : 'Missing'} · TTS:${data.tts_engine} · STT:${data.stt_engine}`;
+    banner.classList.remove('visible');
+    showToast('Backend connected ✓', 'success');
+
+    // Load data now that backend is online
+    await loadBalanceData();
+    await loadTransactions();
+
+  } catch(e) {
+    backendOnline = false;
+    dot.style.background = 'var(--red)';
+    dot.style.boxShadow  = '0 0 8px var(--red)';
+    text.textContent = 'Offline';
+    sub.textContent  = 'Backend offline — start FastAPI server';
+    document.getElementById('offlineUrl').textContent = API_BASE;
+    banner.classList.add('visible');
+    showToast('Backend unreachable — check server', 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
+// WELCOME — auto on page load
+// ─────────────────────────────────────────────
+async function sendWelcome() {
+  if (!backendOnline) return;
+  showTyping(true);
+  try {
+    const fd = new FormData();
+    fd.append('session_id', SESSION_ID);
+    const data = await apiPost('/api/welcome', fd);
+    showTyping(false);
+    const audioUrl = data.audio_url ? API_BASE + data.audio_url : null;
+    addBotMessage(data.speech, null, audioUrl);
+    if (audioUrl) autoPlayAudio(audioUrl);
+    else speakFallback(data.speech);
+  } catch(e) {
+    showTyping(false);
+    addBotMessage('⚠️ Could not reach backend. Please check your server connection.', null, null);
+  }
+}
+
+// ─────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────
+function switchTab(name) {
+  ['chat','balance','cheque','kyc'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('active', t === name);
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('nav-' + t)?.classList.toggle('active', t === name);
+  });
+}
+
+// ─────────────────────────────────────────────
+// CHAT MESSAGES
+// ─────────────────────────────────────────────
+function addBotMessage(text, dataText, audioUrl) {
+  const msgs   = document.getElementById('chatMessages');
+  const typing = document.getElementById('typingIndicator');
+  const id     = 'msg_' + Date.now();
+  const now    = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+
+  let audioBtn = '';
+  if (audioUrl) {
+    audioStore[id] = audioUrl;
+    audioBtn = `<button class="play-audio-btn" onclick="playStoredAudio('${id}')">▶ Play</button>`;
+  }
+
+  let dataCard = '';
+  if (dataText) {
+    dataCard = `<div class="msg-data-card">${dataText}</div>`;
+  }
+
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = id;
+  div.innerHTML = `
+    <div class="msg-avatar">🏦</div>
+    <div class="msg-content">
+      <div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>
+      ${dataCard}
+      <div class="msg-meta">
+        <span class="msg-time">${now}</span>
+        ${audioBtn}
+      </div>
+    </div>`;
+  msgs.insertBefore(div, typing);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msgs   = document.getElementById('chatMessages');
+  const typing = document.getElementById('typingIndicator');
+  const now    = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const div    = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div class="msg-avatar">👤</div>
+    <div class="msg-content">
+      <div class="msg-bubble">${text}</div>
+      <div class="msg-meta"><span class="msg-time">${now}</span></div>
+    </div>`;
+  msgs.insertBefore(div, typing);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping(show) {
+  document.getElementById('typingIndicator').classList.toggle('visible', show);
+  document.getElementById('chatMessages').scrollTop = 99999;
+}
+
+// ─────────────────────────────────────────────
+// SEND MESSAGE (text)
+// ─────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = ''; autoResize(input);
+  addUserMessage(text);
+  await processUserInput(text);
+}
+
+async function sendQuick(text) {
+  addUserMessage(text);
+  await processUserInput(text);
+  switchTab('chat');
+}
+
+async function processUserInput(text) {
+  if (!backendOnline) {
+    addBotMessage('⚠️ Backend is offline. Please start your FastAPI server and retry.', null, null);
+    return;
+  }
+
+  showTyping(true);
+  try {
+    const fd = new FormData();
+    fd.append('session_id', SESSION_ID);
+    fd.append('message', text);
+    fd.append('return_audio', 'true');
+    const data = await apiPost('/api/chat', fd);
+    showTyping(false);
+
+    const audioUrl = data.audio_url ? API_BASE + data.audio_url : null;
+    const dataText = (data.data && Object.keys(data.data).length > 0)
+      ? formatDataCard(data.data) : null;
+
+    addBotMessage(data.speech, dataText, audioUrl);
+
+    // Play voice — backend audio first, Web Speech API as fallback
+    if (audioUrl) {
+      autoPlayAudio(audioUrl);
+    } else {
+      speakFallback(data.speech);
+    }
+
+    // Auto-actions based on response
+    if (data.action === 'show_balance' && data.data?.balance) {
+      updateSidebarBalance(data.data);
+      switchTab('balance');
+    }
+    if (data.action === 'show_upload') switchTab('cheque');
+    if (data.action === 'start_kyc_recording') {
+    switchTab('kyc');
+    setTimeout(() => {
+    startVideoKYC(); // 🔥 camera start
+    }, 500);
+}
+
+  } catch(e) {
+    showTyping(false);
+    addBotMessage('⚠️ Server error. Please check your backend connection.', null, null);
+    showToast('Backend error: ' + e.message, 'error');
+  }
+}
+
+function formatDataCard(data) {
+  return Object.entries(data)
+    .filter(([k, v]) => v && typeof v !== 'object')
+    .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')}: ${v}`)
+    .join('\n');
+}
+
+// ─────────────────────────────────────────────
+// AUDIO PLAYBACK
+// ─────────────────────────────────────────────
+function autoPlayAudio(url) {
+  const player = document.getElementById('currentAudioPlayer');
+  const audio  = document.getElementById('currentAudio');
+  const dl     = document.getElementById('currentAudioDl');
+  audio.src    = url;
+  dl.href      = url;
+  player.classList.add('active');
+  audio.play().catch(() => {
+    // If autoplay blocked, Web Speech API fallback
+    // (happens on some browsers without user gesture)
+  });
+  setTimeout(() => player.classList.remove('active'), 20000);
+}
+
+function playStoredAudio(id) {
+  const url = audioStore[id];
+  if (url) autoPlayAudio(url);
+}
+
+// Web Speech API — fallback TTS (when backend audio unavailable)
+function speakFallback(text) {
+  if (!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US'; u.rate = 0.95; u.pitch = 1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+// ─────────────────────────────────────────────
+// MICROPHONE / VOICE INPUT (sends to backend /api/transcribe)
+// ─────────────────────────────────────────────
+let mediaRecorder = null, audioChunks = [], isRecording = false;
+let recordingTimer = null;
+
+async function toggleMic() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording() {
+  if (!backendOnline) {
+    showToast('Backend offline — cannot transcribe voice', 'error');
+    document.getElementById('voiceStatus').textContent = '⚠️ Backend offline. Start server first.';
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder  = new MediaRecorder(stream);
+    audioChunks    = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = processVoiceInput;
+    mediaRecorder.start();
+    isRecording = true;
+
+    const btn = document.getElementById('micBtn');
+    btn.classList.add('recording');
+    btn.textContent = '⏹';
+    document.getElementById('voiceStatus').textContent = '🔴 Recording… click ⏹ to stop';
+
+    // Progress bar animation
+    const bar  = document.getElementById('voiceProgressBar');
+    const fill = document.getElementById('voiceProgressFill');
+    bar.classList.add('active');
+    fill.style.width = '0%';
+    let pct = 0;
+    recordingTimer = setInterval(() => {
+      pct = Math.min(pct + 1.5, 95);
+      fill.style.width = pct + '%';
+    }, 150);
+
+  } catch(e) {
+    document.getElementById('voiceStatus').textContent = '⚠️ Mic access denied. Allow microphone in browser.';
+    showToast('Microphone access denied', 'error');
+  }
+}
+
+function stopRecording() {
+  if (!mediaRecorder) return;
+  clearInterval(recordingTimer);
+  mediaRecorder.stop();
+  mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  isRecording = false;
+  const btn = document.getElementById('micBtn');
+  btn.classList.remove('recording');
+  btn.textContent = '🎤';
+  document.getElementById('voiceProgressFill').style.width = '100%';
+  document.getElementById('voiceStatus').textContent = '⏳ Sending to backend for transcription…';
+}
+
+async function processVoiceInput() {
+  const blob = new Blob(audioChunks, { type: 'audio/webm' });
+
+  try {
+    const fd = new FormData();
+    fd.append('audio', blob, 'recording.webm');
+    fd.append('session_id', SESSION_ID);
+
+    // ── Step 1: Transcribe via Whisper backend
+    const transcribeData = await apiPost('/api/transcribe', fd);
+    const transcript = transcribeData.transcript;
+
+    if (!transcript || !transcript.trim()) {
+      document.getElementById('voiceStatus').textContent = '⚠️ Could not hear anything. Please try again.';
+      cleanupVoiceUI();
+      return;
+    }
+
+    document.getElementById('voiceStatus').textContent = `✓ Heard: "${transcript}"`;
+    document.getElementById('chatInput').value = transcript;
+
+    // ── Step 2: Send transcript to chat
+    addUserMessage(transcript);
+    await processUserInput(transcript);
+
+  } catch(e) {
+    document.getElementById('voiceStatus').textContent = '⚠️ Transcription failed: ' + e.message;
+    showToast('Transcription failed — check backend', 'error');
+  }
+
+  cleanupVoiceUI();
+}
+
+function cleanupVoiceUI() {
+  setTimeout(() => {
+    document.getElementById('voiceStatus').textContent = '';
+    document.getElementById('voiceProgressBar').classList.remove('active');
+    document.getElementById('voiceProgressFill').style.width = '0%';
+  }, 3000);
+}
+
+// ─────────────────────────────────────────────
+// BALANCE DATA — from backend
+// ─────────────────────────────────────────────
+async function loadBalanceData() {
+  if (!backendOnline) return;
+  try {
+    const [primary, savings] = await Promise.all([
+      apiGet('/api/balance?account_type=primary'),
+      apiGet('/api/balance?account_type=savings'),
+    ]);
+
+    // Primary account
+    document.getElementById('balHolder').textContent  = primary.account_holder || '—';
+    document.getElementById('balMasked').textContent  = primary.masked_account  || '—';
+    document.getElementById('balAmount').textContent  = primary.balance          || '—';
+    document.getElementById('sidebarHolder').textContent = primary.account_holder || '—';
+    document.getElementById('sidebarMasked').textContent = primary.masked_account  || '—';
+    document.getElementById('sidebarBalance').textContent = primary.balance         || '—';
+    document.getElementById('sidebarType').textContent    = (primary.account_type || 'Account') + ' · ' + (primary.status || 'Active');
+
+    // Savings account
+    document.getElementById('savAmount').textContent = savings.balance || '—';
+    if (document.getElementById('savHolder'))
+      document.getElementById('savHolder').textContent = savings.account_holder || '—';
+
+  } catch(e) {
+    console.warn('Balance load failed:', e);
+  }
+}
+
+async function loadTransactions() {
+  if (!backendOnline) return;
+  const txnList = document.getElementById('txnList');
+  try {
+    const data = await apiGet('/api/transactions');
+    renderTransactions(data.transactions);
+  } catch(e) {
+    txnList.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;text-align:center">⚠️ Failed to load transactions — backend error</div>';
+  }
+}
+
+function renderTransactions(txns) {
+  const list = document.getElementById('txnList');
+  if (!txns || txns.length === 0) {
+    list.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">No transactions found</div>';
+    return;
+  }
+  list.innerHTML = txns.map(t => `
+    <div class="txn-row">
+      <span class="txn-date">${t.date}</span>
+      <span>${t.description}</span>
+      <span><span class="txn-badge ${t.type.toLowerCase()}">${t.type}</span></span>
+      <span class="txn-amount ${t.type.toLowerCase()}" style="text-align:right">${t.amount}</span>
+    </div>
+  `).join('');
+}
+
+function updateSidebarBalance(data) {
+  if (data.balance)  document.getElementById('sidebarBalance').textContent = data.balance;
+  if (data.holder)   document.getElementById('sidebarHolder').textContent  = data.holder;
+  if (data.masked)   document.getElementById('sidebarMasked').textContent  = data.masked;
+  if (data.balance)  document.getElementById('balAmount').textContent       = data.balance;
+  if (data.holder)   document.getElementById('balHolder').textContent       = data.holder;
+}
+
+// ─────────────────────────────────────────────
+// CHEQUE UPLOAD & VALIDATION — via backend
+// ─────────────────────────────────────────────
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file = event.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  // Preview image
+  const imgReader = new FileReader();
+  imgReader.onload = e => {
+    document.getElementById('chequePreviewImg').src = e.target.result;
+    document.getElementById('chequePreview').style.display = 'block';
+  };
+  imgReader.readAsDataURL(file);
+  uploadCheque(file);
+}
+
+async function uploadCheque(file) {
+  document.getElementById('checksList').innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px">⏳ Sending to backend for validation…</div>';
+  document.getElementById('validationResult').classList.add('visible');
+  document.getElementById('chequePlaceholder').style.display = 'none';
+  document.getElementById('validationHeader').className = 'validation-header';
+  document.getElementById('validationIcon').textContent = '⏳';
+  document.getElementById('validationTitle').textContent = 'Validating…';
+  document.getElementById('validationMsg').textContent = '';
+
+  if (!backendOnline) {
+    showValidationResult(false, 'Backend Offline', 'Cannot validate — backend is not running.', [], ['Backend connection']);
+    return;
+  }
+
+  try {
+    const fd = new FormData();
+    fd.append('cheque_image', file, file.name);
+    fd.append('session_id', SESSION_ID);
+    const data = await apiPost('/api/cheque', fd);
+
+    showValidationResult(
+      data.valid,
+      data.valid ? 'Cheque Validated ✓' : 'Validation Failed',
+      data.message || data.speech,
+      data.checks_passed || [],
+      data.checks_failed || []
+    );
+
+    // Speak the result
+    speakFallback(data.speech || (data.valid ? 'Cheque validated successfully.' : 'Cheque validation failed.'));
+
+  } catch(e) {
+    showValidationResult(false, 'Validation Error', 'Backend error: ' + e.message, [], ['Backend connection']);
+    showToast('Cheque validation failed', 'error');
+  }
+}
+
+function showValidationResult(valid, title, message, passed, failed) {
+  document.getElementById('validationHeader').className = `validation-header ${valid ? 'success' : 'error'}`;
+  document.getElementById('validationIcon').textContent  = valid ? '✅' : '❌';
+  const titleEl = document.getElementById('validationTitle');
+  titleEl.textContent = title;
+  titleEl.style.color = valid ? 'var(--green)' : 'var(--red)';
+  document.getElementById('validationMsg').textContent = message;
+  document.getElementById('checksList').innerHTML = [
+    ...passed.map(c => `<div class="check-item passed"><span>✓</span>${c}</div>`),
+    ...failed.map(c => `<div class="check-item failed"><span>✗</span>${c}</div>`)
+  ].join('');
+  document.getElementById('validationResult').classList.add('visible');
+  showToast(valid ? 'Cheque validated ✓' : 'Validation failed', valid ? 'success' : 'error');
+}
+
+function resetUpload() {
+  document.getElementById('chequePreview').style.display = 'none';
+  document.getElementById('validationResult').classList.remove('visible');
+  document.getElementById('chequeFileInput').value = '';
+  document.getElementById('chequePlaceholder').style.display = 'flex';
+}
+
+// ─────────────────────────────────────────────
+// KYC — Voice & Video recording + backend save
+// ─────────────────────────────────────────────
+const KYC_DOCS = [
+  {name:'Emirates ID',      status:'verified'},
+  {name:'Passport Copy',    status:'verified'},
+  {name:'Proof of Address', status:'pending'},
+  {name:'Selfie with ID',   status:'pending'},
+  {name:'Voice Sample',     status:'record'},
+  {name:'Video Sample',     status:'record'},
+];
+let kycDocsState = [...KYC_DOCS];
+
+function renderKYCStatus() {
+  document.getElementById('kycStatusList').innerHTML = kycDocsState.map(d => `
+    <div class="kyc-status-item">
+      <span>${d.name}</span>
+      <span class="kyc-status-badge ${d.status}">${d.status.charAt(0).toUpperCase() + d.status.slice(1)}</span>
+    </div>`).join('');
+}
+
+// VOICE KYC
+let voiceKycRecorder = null, voiceKycChunks = [];
+
+async function startVoiceKYC() {
+  const btn    = document.getElementById('voiceRecordBtn');
+  const status = document.getElementById('voiceKycStatus');
+  const bar    = document.getElementById('voiceKycBar');
+  const fill   = document.getElementById('voiceKycFill');
+
+  btn.disabled = true;
+  status.textContent = 'Requesting microphone access…';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceKycChunks   = [];
+    voiceKycRecorder = new MediaRecorder(stream);
+    voiceKycRecorder.ondataavailable = e => voiceKycChunks.push(e.data);
+    voiceKycRecorder.onstop = () => saveVoiceKYC(stream);
+    voiceKycRecorder.start();
+
+    bar.style.display = 'block'; fill.style.width = '0%';
+    btn.classList.add('recording'); btn.textContent = '⏹ Recording…';
+
+    const DURATION = 5000;
+    let elapsed = 0;
+    const interval = setInterval(() => {
+      elapsed += 100;
+      fill.style.width = (elapsed / DURATION * 100) + '%';
+      const remaining = Math.ceil((DURATION - elapsed) / 1000);
+      status.textContent = `🔴 Recording… ${remaining}s remaining`;
+    }, 100);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      voiceKycRecorder.stop();
+      stream.getTracks().forEach(t => t.stop());
+    }, DURATION);
+
+  } catch(e) {
+    btn.disabled = false;
+    status.textContent = '⚠️ Microphone access denied';
+    showToast('Microphone access denied', 'error');
+  }
+}
+
+async function saveVoiceKYC(stream) {
+  const btn    = document.getElementById('voiceRecordBtn');
+  const status = document.getElementById('voiceKycStatus');
+
+  btn.classList.remove('recording'); btn.textContent = '🎤 Record Voice'; btn.disabled = false;
+  status.textContent = '⏳ Sending to backend…';
+
+  try {
+    if (!backendOnline) throw new Error('Backend offline');
+
+    const fd = new FormData();
+    fd.append('session_id', SESSION_ID);
+    fd.append('user_name', document.getElementById('sidebarHolder').textContent || 'Valued Customer');
+    const data = await apiPost('/api/kyc', fd);
+
+    status.textContent = `✅ Saved · ${data.kyc_id}`;
+    showKYCResult(data);
+    speakFallback(data.speech);
+    kycDocsState = kycDocsState.map(d => d.name === 'Voice Sample' ? {...d, status:'done'} : d);
+    renderKYCStatus();
+    showToast('Voice KYC saved ✓', 'success');
+
+  } catch(e) {
+    status.textContent = '⚠️ Backend error: ' + e.message;
+    showToast('KYC save failed — check backend', 'error');
+  }
+}
+
+// VIDEO KYC
+let videoKycRecorder = null, videoKycChunks = [], cameraStream = null;
+
+async function startVideoKYC() {
+  const btn          = document.getElementById('videoRecordBtn');
+  const status       = document.getElementById('videoKycStatus');
+  const preview      = document.getElementById('cameraPreview');
+  const videoEl      = document.getElementById('kycVideo');
+  const recIndicator = document.getElementById('camRecIndicator');
+  const timer        = document.getElementById('camTimer');
+
+  btn.disabled = true;
+  status.textContent = 'Requesting camera access…';
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+    // 🔥 SHOW VIDEO
+    videoEl.srcObject = cameraStream;
+    await videoEl.play();
+    preview.classList.add('active');
+
+    recIndicator.style.display = 'flex';
+    timer.style.display = 'block';
+
+    videoKycChunks = [];
+
+    videoKycRecorder = new MediaRecorder(cameraStream);
+    videoKycRecorder.ondataavailable = e => {
+      if (e.data.size > 0) videoKycChunks.push(e.data);
+    };
+
+    videoKycRecorder.onstop = saveVideoKYC;
+    videoKycRecorder.start();
+
+    btn.classList.add('recording');
+    btn.textContent = '⏹ Recording…';
+
+    const DURATION = 10000;
+    let elapsed = 0;
+
+    const interval = setInterval(() => {
+      elapsed += 1000;
+      const remaining = Math.ceil((DURATION - elapsed) / 1000);
+      timer.textContent = remaining + 's';
+      status.textContent = `🔴 Recording… ${remaining}s remaining`;
+
+      if (elapsed >= DURATION) clearInterval(interval);
+    }, 1000);
+
+    setTimeout(() => {
+      videoKycRecorder.stop();
+      cameraStream.getTracks().forEach(t => t.stop());
+    }, DURATION);
+
+  } catch(e) {
+    btn.disabled = false;
+    status.textContent = '⚠️ Camera access denied';
+    showToast('Camera/Mic access denied', 'error');
+  }
+}
+
+async function saveVideoKYC() {
+  const btn          = document.getElementById('videoRecordBtn');
+  const status       = document.getElementById('videoKycStatus');
+  const preview      = document.getElementById('cameraPreview');
+  const timer        = document.getElementById('camTimer');
+  const recIndicator = document.getElementById('camRecIndicator');
+
+  btn.classList.remove('recording');
+  btn.textContent = '📹 Record Video';
+  btn.disabled = false;
+
+  preview.classList.remove('active');
+  recIndicator.style.display = 'none';
+  timer.style.display = 'none';
+
+  status.textContent = '⏳ Uploading video for verification…';
+
+  try {
+    if (!backendOnline) throw new Error('Backend offline');
+
+    // 🔥 CREATE VIDEO FILE
+    const blob = new Blob(videoKycChunks, { type: 'video/webm' });
+
+    const fd = new FormData();
+    fd.append('session_id', SESSION_ID);
+    fd.append('user_name', document.getElementById('sidebarHolder').textContent || 'Customer');
+    fd.append('video', blob, 'kyc_video.webm'); // 🔥 IMPORTANT
+
+    const data = await apiPost('/api/kyc', fd);
+
+    // 🔥 SUCCESS MESSAGE
+    if (data.status === "success") {
+      status.textContent = "🎉 KYC Successful. Your identity is verified.";
+      showToast('KYC successful ✓', 'success');
+    } else {
+      status.textContent = "⚠️ KYC verification failed.";
+      showToast('KYC failed', 'error');
+    }
+
+    showKYCResult(data);
+
+  } catch(e) {
+    status.textContent = '⚠️ Backend error: ' + e.message;
+    showToast('KYC failed — check backend', 'error');
+  }
+}
+
+function showKYCResult(data) {
+  document.getElementById('kycResult').classList.add('visible');
+  document.getElementById('kycResultPlaceholder').style.display = 'none';
+
+  document.getElementById('kycRefId').textContent =
+    data.kyc_id || 'KYC' + Math.floor(Math.random()*10000);
+
+  document.getElementById('kycTimestamp').textContent =
+    data.timestamp || new Date().toLocaleString();
+
+  document.getElementById('kycSpeech').textContent =
+    data.speech || 'KYC verification completed successfully.';
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+function showApiSettings() {
+  document.getElementById('settingsModal').classList.add('visible');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+async function saveSettings() {
+  API_BASE = document.getElementById('apiBaseUrl').value.trim().replace(/\/$/, '');
+  localStorage.setItem('apiBase', API_BASE);
+  closeModal('settingsModal');
+  showToast('Settings saved — reconnecting…', 'info');
+  await checkHealth();
+  if (backendOnline) await sendWelcome();
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('visible'); });
+});
+
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  const icons = {success:'✅', error:'⚠️', info:'ℹ️'};
+  t.innerHTML = `${icons[type] || 'ℹ️'} ${msg}`;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

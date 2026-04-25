@@ -1,0 +1,44 @@
+# ============================================================
+#  requirements.txt — Python Dependencies
+#  Kentiq AI Voice Banking Assistant
+#
+#  Install all: pip install -r requirements.txt
+# ============================================================
+
+# ── Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9      # For file uploads in FastAPI
+
+# ── Environment Variables
+python-dotenv==1.0.1
+
+# ── PDF Generation & Reading
+reportlab==4.2.2             # Create PDF (bank data PDF)
+pdfplumber==0.11.4           # Read/parse PDF text and tables
+
+# ── Text-to-Speech Engines (choose one, all listed for flexibility)
+gTTS==2.5.3                  # Google TTS (requires internet)
+pyttsx3==2.90                # Offline TTS (no internet needed)
+# azure-cognitiveservices-speech  # Azure TTS (best quality, paid)
+
+# ── Speech-to-Text Engines
+SpeechRecognition==3.10.4    # Wrapper for multiple STT engines
+openai==1.51.0               # For Whisper API (requires OPENAI_API_KEY)
+# openai-whisper               # Local Whisper model (large download)
+
+# ── Audio Recording & Playback
+sounddevice==0.5.0           # Microphone recording
+scipy==1.14.1                # WAV file I/O (used with sounddevice)
+pyaudio==0.2.14              # Required by SpeechRecognition for mic input
+
+# ── Image Processing (Cheque Validation)
+Pillow==10.4.0               # PIL — image dimensions, format checks
+opencv-python==4.10.0.84     # OpenCV — cheque structure detection
+
+# ── Data Handling
+numpy==1.26.4                # Required by sounddevice, opencv
+pydantic==2.9.2              # Data models (used by FastAPI)
+
+# ── Utility
+requests==2.32.3             # HTTP requests (for API calls)
